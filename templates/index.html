@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Climat France 2100</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+/* ── Reset & base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #07090f;
+  --bg-card:   #0d1117;
+  --bg-card2:  #111827;
+  --bg-hover:  #161d27;
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(255,255,255,0.12);
+  --text:      #f0f4f8;
+  --text-sub:  #6b7f99;
+  --text-dim:  #3d4f63;
+  --blue:      #3b82f6;
+  --amber:     #f59e0b;
+  --red:       #ef4444;
+  --green:     #10b981;
+  --purple:    #8b5cf6;
+  --sidebar-w: 220px;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Layout ── */
+.app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: #060810;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.sidebar-logo {
+  padding: 1.5rem 1.25rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo .eyebrow {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+}
+.sidebar-logo .title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.sidebar-logo .subtitle {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: 0.2rem;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 0.75rem 0.6rem;
+  overflow-y: auto;
+}
+
+.nav-section {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  padding: 0.8rem 0.65rem 0.4rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--text-sub);
+  font-size: 0.83rem;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+  margin-bottom: 1px;
+  user-select: none;
+}
+.nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+.nav-item.active {
+  background: rgba(59,130,246,0.1);
+  color: var(--blue);
+}
+.nav-item .nav-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.nav-item.active .nav-icon { opacity: 1; }
+
+.sidebar-footer {
+  padding: 1rem 1.1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+/* ── Main content ── */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg);
+}
+
+/* ── Page ── */
+.page { display: none; padding: 2rem 2.5rem 3rem; max-width: 1400px; animation: fadeIn 0.25s ease; }
+.page.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Page header ── */
+.page-header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+.page-title {
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--text);
+}
+.page-sub {
+  font-size: 0.83rem;
+  color: var(--text-sub);
+  margin-top: 0.35rem;
+  line-height: 1.6;
+}
+
+/* ── Section label ── */
+.section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.85rem;
+  margin-top: 1.75rem;
+}
+.section-label:first-child { margin-top: 0; }
+
+/* ── KPI grid ── */
+.kpi-grid { display: grid; gap: 0.85rem; }
+.kpi-grid-5 { grid-template-columns: repeat(5, 1fr); }
+.kpi-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.kpi-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.1rem 1.2rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent, var(--blue));
+}
+.kpi-card:hover { border-color: var(--border2); }
+.kpi-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem;
+}
+.kpi-value {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.kpi-sub {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: 0.35rem;
+}
+
+/* ── Two column layout ── */
+.cols-2   { display: grid; grid-template-columns: 1fr 1fr;   gap: 1.25rem; }
+.cols-3-2 { display: grid; grid-template-columns: 3fr 2fr;   gap: 1.25rem; }
+.cols-2-1 { display: grid; grid-template-columns: 2fr 1fr;   gap: 1.25rem; }
+
+/* ── Chart card ── */
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem;
+  overflow: hidden;
+}
+.chart-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.75rem;
+}
+
+/* ── Scenario projection cards ── */
+.scenario-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.1rem 1.2rem;
+  position: relative;
+  overflow: hidden;
+}
+.scenario-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--sc-color);
+}
+.scenario-name {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.75rem;
+}
+.scenario-vals { display: flex; gap: 1rem; margin-top: 0.6rem; }
+.sc-val-group { }
+.sc-val-yr {
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.sc-val {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--sc-color);
+}
+.sc-val-sub {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  margin-top: 0.5rem;
+}
+
+/* ── CO2 mini boxes ── */
+.co2-mini {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.co2-box {
+  flex: 1;
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.65rem;
+  text-align: center;
+}
+.co2-box-label {
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.co2-box-val {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-top: 0.15rem;
+}
+
+/* ── Controls ── */
+.control-bar {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+}
+.control-group { display: flex; align-items: center; gap: 0.65rem; }
+.control-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.control-val {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--blue);
+  min-width: 40px;
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 180px;
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--blue);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+
+select {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.4rem 0.75rem;
+  border-radius: 7px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+select:focus { border-color: var(--blue); }
+
+/* ── Metrics table ── */
+.metrics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-top: 0.75rem;
+}
+.metrics-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+.metrics-table td {
+  padding: 0.55rem 0.75rem;
+  color: var(--text-sub);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.metrics-table tr:last-child td { border-bottom: none; }
+.metrics-table tr.best td { color: var(--green); }
+.metrics-table tr.best td:first-child { font-weight: 600; }
+.badge-best {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  background: rgba(16,185,129,0.15);
+  color: var(--green);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  margin-left: 0.4rem;
+  letter-spacing: 0.05em;
+}
+
+/* ── Projection table ── */
+.proj-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-top: 0.75rem;
+}
+.proj-table th {
+  text-align: left;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+.proj-table td {
+  padding: 0.6rem 0.9rem;
+  color: var(--text-sub);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.proj-table tr:last-child td { border-bottom: none; }
+
+/* ── Recommendation cards ── */
+.reco-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--rc-color);
+  border-radius: 0 12px 12px 0;
+  padding: 1.2rem 1.3rem;
+  margin-bottom: 0.75rem;
+}
+.reco-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+}
+.reco-item {
+  font-size: 0.8rem;
+  color: var(--text-sub);
+  padding: 0.2rem 0 0.2rem 0.75rem;
+  border-left: 1px solid var(--border);
+  margin-left: 0.1rem;
+  margin-bottom: 0.18rem;
+}
+.source-tag {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-size: 0.66rem;
+  color: var(--text-dim);
+  background: rgba(255,255,255,0.04);
+  padding: 0.18rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* ── Regulatory ref cards ── */
+.ref-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; }
+.ref-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--rc-color);
+  border-radius: 0 0 10px 10px;
+  padding: 0.9rem;
+}
+.ref-name {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.35rem;
+}
+.ref-desc {
+  font-size: 0.76rem;
+  color: var(--text-sub);
+  line-height: 1.4;
+  margin-bottom: 0.4rem;
+}
+.ref-horizon { font-size: 0.68rem; color: var(--text-dim); }
+
+/* ── Loading spinner ── */
+.spinner-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 0;
+  gap: 1rem;
+}
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid rgba(255,255,255,0.07);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+.spinner-text { font-size: 0.78rem; color: var(--text-dim); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Skeleton loaders ── */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+}
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+.skeleton-chart { height: 320px; border-radius: 12px; }
+.skeleton-kpi   { height: 90px;  border-radius: 12px; }
+
+/* ── Divider ── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+/* ── Caption ── */
+.caption { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.6rem; line-height: 1.6; }
+
+/* ── Scroll ── */
+.main::-webkit-scrollbar { width: 6px; }
+.main::-webkit-scrollbar-track { background: transparent; }
+.main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
+.main::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ── SIDEBAR ───────────────────────────────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="eyebrow">Dashboard</div>
+    <div class="title">Climat France</div>
+    <div class="subtitle">1931 — 2100</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section">Analyse</div>
+
+    <div class="nav-item active" data-page="overview">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/>
+        <rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/>
+      </svg>
+      Vue d'ensemble
+    </div>
+
+    <div class="nav-item" data-page="temperatures">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M8 2v7M5 13a3 3 0 1 0 6 0 3 3 0 0 0-6 0"/>
+        <path d="M8 9a2 2 0 1 0 0 8 2 2 0 0 0 0-8z" fill="currentColor" stroke="none" opacity=".3"/>
+      </svg>
+      Températures
+    </div>
+
+    <div class="nav-item" data-page="fires">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M8 14c3.5 0 6-2.5 6-5.5C14 5 11 2 8 1 8 3 6.5 4 5.5 5 4 3.5 4 2 4 2 2 4 2 6.5 4 8.5 4 11 6 14 8 14z"/>
+      </svg>
+      Feux de forêt
+    </div>
+
+    <div class="nav-item" data-page="emissions">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M1 12 L4 8 L7 10 L10 5 L13 7 L15 4"/>
+        <path d="M1 14h14" stroke-width="1"/>
+      </svg>
+      Émissions & CO₂
+    </div>
+
+    <div class="nav-item" data-page="precipitations">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M4 9a4 4 0 0 1 8 0"/><path d="M2 9h12a2 2 0 0 1 0 4H4a2 2 0 0 1 0-4z"/>
+        <path d="M6 15l-1 2M10 15l-1 2" stroke-linecap="round"/>
+      </svg>
+      Précipitations
+    </div>
+
+    <div class="nav-section" style="margin-top:0.5rem">Action</div>
+
+    <div class="nav-item" data-page="preconisations">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M13 3L6 10l-3-3" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="8" cy="8" r="7"/>
+      </svg>
+      Préconisations
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    Sources : Météo-France · NOAA<br>
+    SDES · GéoRisques · VigiEau<br>
+    <span style="opacity:0.5">IPCC AR6 · PNACC 3</span>
+  </div>
+</aside>
+
+<!-- ── MAIN CONTENT ──────────────────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- PAGE 1 — Vue d'ensemble -->
+  <section id="page-overview" class="page active">
+    <div class="page-header">
+      <div class="page-title">Projections Climatiques — France</div>
+      <div class="page-sub">Analyse historique 1931–2023 · Modèle IA log-linéaire · Projections IPCC AR6 jusqu'en 2100</div>
+    </div>
+    <div id="overview-content">
+      <div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Chargement des données…</div></div>
+    </div>
+  </section>
+
+  <!-- PAGE 2 — Températures -->
+  <section id="page-temperatures" class="page">
+    <div class="page-header">
+      <div class="page-title">Températures &amp; Projections</div>
+      <div class="page-sub">4 modèles comparés · RMSE / MAE / MAPE · Projections IPCC AR6</div>
+    </div>
+    <div class="control-bar">
+      <div class="control-group">
+        <span class="control-label">Horizon de projection</span>
+        <input type="range" id="temp-year-slider" min="2030" max="2100" step="5" value="2060">
+        <span class="control-val" id="temp-year-val">2060</span>
+      </div>
+    </div>
+    <div id="temperatures-content">
+      <div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Calcul des modèles…</div></div>
+    </div>
+  </section>
+
+  <!-- PAGE 3 — Feux -->
+  <section id="page-fires" class="page">
+    <div class="page-header">
+      <div class="page-title">Feux de forêt</div>
+      <div class="page-sub">Base BDIFF · France métropolitaine · 2003–2024</div>
+    </div>
+    <div class="control-bar">
+      <div class="control-group">
+        <span class="control-label">Depuis</span>
+        <input type="range" id="fire-start" min="2014" max="2023" step="1" value="2014">
+        <span class="control-val" id="fire-start-val">2014</span>
+        <span style="font-size:0.72rem;color:var(--text-dim)">→ 2024</span>
+      </div>
+    </div>
+    <div id="fires-content">
+      <div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Chargement des données…</div></div>
+    </div>
+  </section>
+
+  <!-- PAGE 4 — Émissions -->
+  <section id="page-emissions" class="page">
+    <div class="page-header">
+      <div class="page-title">Émissions &amp; CO₂</div>
+      <div class="page-sub">Concentrations NOAA 1958–2026 · Émissions France SDES 1995–2024 · Empreinte carbone par habitant</div>
+    </div>
+    <div id="emissions-content">
+      <div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Chargement des données…</div></div>
+    </div>
+  </section>
+
+  <!-- PAGE 5 — Précipitations -->
+  <section id="page-precipitations" class="page">
+    <div class="page-header">
+      <div class="page-title">Précipitations &amp; Sécheresse</div>
+      <div class="page-sub">Séries homogénéisées LSH Météo-France · 1947–2023 · Anomalie vs référence 1961–1990</div>
+    </div>
+    <div class="control-bar" id="precip-controls" style="display:none">
+      <div class="control-group">
+        <span class="control-label">Département</span>
+        <select id="dept-select"></select>
+      </div>
+    </div>
+    <div id="precipitations-content">
+      <div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Chargement des données…</div></div>
+    </div>
+  </section>
+
+  <!-- PAGE 6 — Préconisations -->
+  <section id="page-preconisations" class="page">
+    <div class="page-header">
+      <div class="page-title">Préconisations citoyennes</div>
+      <div class="page-sub">Recommandations alignées PNACC 3 · Earth Action Report 2025 · SNBC · Accord de Paris</div>
+    </div>
+    <div class="control-bar">
+      <div class="control-group">
+        <span class="control-label">Scénario de référence</span>
+        <select id="scenario-select">
+          <option value="Optimiste (+1.4°C)">Optimiste (+1.4°C)</option>
+          <option value="Intermédiaire (+2.7°C)" selected>Intermédiaire (+2.7°C)</option>
+          <option value="Pessimiste (+4.4°C)">Pessimiste (+4.4°C)</option>
+        </select>
+      </div>
+    </div>
+    <div id="preconisations-content">
+      <div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Chargement…</div></div>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<!-- ── CHATBOT ───────────────────────────────────────────────────────────── -->
+<style>
+.chat-btn {
+  position: fixed; bottom: 1.75rem; right: 1.75rem; z-index: 1000;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--blue); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 20px rgba(59,130,246,0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.chat-btn:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(59,130,246,0.55); }
+.chat-btn svg { width: 22px; height: 22px; color: #fff; }
+
+.chat-panel {
+  position: fixed; bottom: 5.5rem; right: 1.75rem; z-index: 999;
+  width: 360px; max-height: 520px;
+  background: var(--bg-card); border: 1px solid var(--border2);
+  border-radius: 16px; display: flex; flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  transform: scale(0.92) translateY(12px); opacity: 0;
+  pointer-events: none; transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.chat-panel.open { transform: scale(1) translateY(0); opacity: 1; pointer-events: all; }
+
+.chat-header {
+  display: flex; align-items: center; gap: 0.65rem;
+  padding: 0.9rem 1rem; border-bottom: 1px solid var(--border);
+}
+.chat-header-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+.chat-header-title { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+.chat-header-sub { font-size: 0.7rem; color: var(--text-dim); margin-left: auto; }
+
+.chat-messages {
+  flex: 1; overflow-y: auto; padding: 0.85rem;
+  display: flex; flex-direction: column; gap: 0.65rem;
+}
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 2px; }
+
+.msg { max-width: 85%; padding: 0.6rem 0.85rem; border-radius: 10px; font-size: 0.82rem; line-height: 1.5; }
+.msg-user {
+  align-self: flex-end;
+  background: rgba(59,130,246,0.18); color: var(--text);
+  border-bottom-right-radius: 3px;
+}
+.msg-bot {
+  align-self: flex-start;
+  background: var(--bg-card2); color: var(--text-sub);
+  border-bottom-left-radius: 3px; border: 1px solid var(--border);
+}
+.msg-typing { display: flex; gap: 4px; align-items: center; padding: 0.7rem 0.85rem; }
+.msg-typing span {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim);
+  animation: blink 1.2s infinite;
+}
+.msg-typing span:nth-child(2) { animation-delay: 0.2s; }
+.msg-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%,80%,100%{opacity:.3} 40%{opacity:1} }
+
+.chat-footer {
+  padding: 0.65rem; border-top: 1px solid var(--border);
+  display: flex; gap: 0.5rem;
+}
+.chat-input {
+  flex: 1; background: var(--bg-card2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 0.5rem 0.75rem;
+  color: var(--text); font-size: 0.82rem; font-family: inherit; outline: none;
+  transition: border-color 0.15s; resize: none;
+}
+.chat-input:focus { border-color: var(--blue); }
+.chat-send {
+  width: 36px; height: 36px; border-radius: 8px; border: none;
+  background: var(--blue); color: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s; flex-shrink: 0;
+}
+.chat-send:hover { background: #2563eb; }
+.chat-send:disabled { background: var(--text-dim); cursor: default; }
+</style>
+
+<button class="chat-btn" id="chat-btn" title="Assistant climatique">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+</button>
+
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-header">
+    <div class="chat-header-dot"></div>
+    <div class="chat-header-title">Assistant climatique</div>
+    <div class="chat-header-sub">Mistral AI</div>
+  </div>
+  <div class="chat-messages" id="chat-messages">
+    <div class="msg msg-bot">Bonjour ! Je connais toutes les données de ce tableau de bord. Posez-moi vos questions sur le climat en France.</div>
+  </div>
+  <div class="chat-footer">
+    <textarea class="chat-input" id="chat-input" rows="1" placeholder="Posez votre question…"></textarea>
+    <button class="chat-send" id="chat-send">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  currentPage: 'overview',
+  loaded: {},
+  tempYear: 2060,
+  fireStart: 2014,
+  fireEnd: 2024,
+  substance: 'Dioxyde de carbone',
+  dept: 'all',
+  scenario: 'Intermédiaire (+2.7°C)',
+};
+
+// ── Plotly config ─────────────────────────────────────────────────────────
+const PLY_CFG = { displayModeBar: false, responsive: true };
+
+// ── Navigation ────────────────────────────────────────────────────────────
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const page = item.dataset.page;
+    navigateTo(page);
+  });
+});
+
+function navigateTo(page) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelector(`[data-page="${page}"]`).classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+  state.currentPage = page;
+  loadPage(page);
+  document.querySelector('.main').scrollTo(0, 0);
+}
+
+function loadPage(page) {
+  if (page === 'overview')        loadOverview();
+  else if (page === 'temperatures') loadTemperatures();
+  else if (page === 'fires')       loadFires();
+  else if (page === 'emissions')   loadEmissions();
+  else if (page === 'precipitations') loadPrecipitations();
+  else if (page === 'preconisations') loadPreconisations();
+}
+
+// ── Fetch helper ──────────────────────────────────────────────────────────
+async function apiFetch(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+function plotChart(id, chartData) {
+  if (!chartData) { document.getElementById(id).innerHTML = '<div class="caption" style="text-align:center;padding:2rem">Données non disponibles</div>'; return; }
+  Plotly.newPlot(id, chartData.data, chartData.layout, PLY_CFG);
+}
+
+// ── Helpers: HTML builders ────────────────────────────────────────────────
+function kpiCard(label, value, sub, accent) {
+  return `<div class="kpi-card" style="--accent:${accent}">
+    <div class="kpi-label">${label}</div>
+    <div class="kpi-value">${value}</div>
+    <div class="kpi-sub">${sub}</div>
+  </div>`;
+}
+
+function sectionLabel(text) {
+  return `<div class="section-label">${text}</div>`;
+}
+
+function chartCard(title, id, h=340) {
+  return `<div class="chart-card">
+    <div class="chart-title">${title}</div>
+    <div id="${id}" style="height:${h}px"></div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PAGE 1 — Vue d'ensemble
+// ══════════════════════════════════════════════════════════════════════════
+async function loadOverview() {
+  if (state.loaded.overview) return;
+  const el = document.getElementById('overview-content');
+  try {
+    const d = await apiFetch('/api/overview');
+    const { kpis, co2_delta, charts, projections } = d;
+
+    let html = '';
+
+    // KPIs
+    html += sectionLabel('Indicateurs clés 2023–2024');
+    html += '<div class="kpi-grid kpi-grid-5">';
+    html += kpiCard('Anomalie température', `+${kpis.anom_2023.toFixed(2)}°C`, 'vs référence 1961–1990', '#ef4444');
+    html += kpiCard('CO₂ atmosphérique', `${kpis.co2_last.toFixed(0)} ppm`, 'Mauna Loa · NOAA 2024', '#f59e0b');
+    html += kpiCard('Surface brûlée cumulée', `${kpis.fires_mha.toFixed(1)} Mha`, 'Incendies France 2003–2024', '#f97316');
+    html += kpiCard('Empreinte carbone', `${kpis.emp_last} t`, 'CO₂e par habitant · 2024', '#3b82f6');
+    html += kpiCard('Jours TX ≥ 30°C', `${kpis.hot_2023} j`, `Paris-Montsouris 2023 · réf. ${kpis.hot_ref} j/an`, '#ef4444');
+    html += '</div>';
+
+    // Charts row
+    html += '<div class="cols-3-2" style="margin-top:1.5rem">';
+    html += '<div>';
+    html += sectionLabel('Anomalie de température France 1931 – 2023');
+    html += `<div class="chart-card"><div id="chart-temp-hist" style="height:310px"></div></div>`;
+    html += '</div>';
+    html += '<div>';
+    html += sectionLabel('Concentration CO₂ — jauge');
+    html += `<div class="chart-card"><div id="chart-co2-gauge" style="height:220px"></div></div>`;
+    html += `<div class="co2-mini">
+      <div class="co2-box">
+        <div class="co2-box-label">Préindustriel</div>
+        <div class="co2-box-val" style="color:#3b82f6">280 ppm</div>
+      </div>
+      <div class="co2-box">
+        <div class="co2-box-label">+vs 1850</div>
+        <div class="co2-box-val" style="color:#f59e0b">+${co2_delta.toFixed(0)} ppm</div>
+      </div>
+    </div>`;
+    html += '</div>';
+    html += '</div>';
+
+    // Projections
+    html += sectionLabel('Projections 2030 · 2050 · 2100');
+    html += '<div class="kpi-grid kpi-grid-3">';
+    for (const [name, sc] of Object.entries(projections)) {
+      html += `<div class="scenario-card" style="--sc-color:${sc.color}">
+        <div class="scenario-name">${name}</div>
+        <div class="scenario-vals">
+          ${['2030','2050','2100'].map(yr => `<div class="sc-val-group">
+            <div class="sc-val-yr">${yr}</div>
+            <div class="sc-val">${sc.vals[yr] >= 0 ? '+' : ''}${sc.vals[yr].toFixed(1)}°C</div>
+          </div>`).join('')}
+        </div>
+        <div class="sc-val-sub">anomalie vs 1961–1990</div>
+      </div>`;
+    }
+    html += '</div>';
+
+    el.innerHTML = html;
+
+    // Render charts
+    plotChart('chart-temp-hist',  charts.temp);
+    plotChart('chart-co2-gauge',  charts.co2_gauge);
+
+    state.loaded.overview = true;
+  } catch(e) {
+    el.innerHTML = `<div class="spinner-wrap"><div class="spinner-text" style="color:#ef4444">Erreur : ${e.message}</div></div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PAGE 2 — Températures
+// ══════════════════════════════════════════════════════════════════════════
+async function loadTemperatures(force=false) {
+  if (state.loaded.temperatures && !force) return;
+  const el = document.getElementById('temperatures-content');
+  el.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Calcul des projections…</div></div>';
+  try {
+    const d = await apiFetch(`/api/temperatures?year=${state.tempYear}`);
+    let html = '';
+
+    // Projection chart
+    html += sectionLabel('Anomalie de température — historique &amp; projections');
+    html += `<div class="chart-card"><div id="chart-proj" style="height:420px"></div></div>`;
+
+    // Model metrics
+    html += '<div class="cols-2" style="margin-top:1rem">';
+    html += '<div>';
+    html += sectionLabel('Comparaison des modèles prédictifs');
+    html += `<div class="chart-card"><div id="chart-models" style="height:280px"></div></div>`;
+    // Table
+    html += '<div class="chart-card" style="margin-top:0.75rem;overflow-x:auto">';
+    html += '<table class="metrics-table">';
+    html += '<thead><tr><th>Modèle</th><th>RMSE</th><th>MAE</th><th>MAPE (%)</th></tr></thead><tbody>';
+    for (const [name, m] of Object.entries(d.metrics)) {
+      const isBest = name === d.best_model;
+      html += `<tr class="${isBest?'best':''}">
+        <td>${name}${isBest ? '<span class="badge-best">Sélectionné</span>' : ''}</td>
+        <td>${m['RMSE']}</td><td>${m['MAE']}</td><td>${m['MAPE (%)']}</td>
+      </tr>`;
+    }
+    html += '</tbody></table>';
+    html += `<p class="caption">Entraînement 80%, test 20%. Modèle retenu : <strong style="color:#10b981">${d.best_model}</strong></p>`;
+    html += '</div></div>';
+
+    html += '<div>';
+    html += sectionLabel('Valeurs projetées par scénario');
+    html += '<div class="chart-card" style="overflow-x:auto">';
+    html += '<table class="proj-table"><thead><tr><th>Scénario</th>';
+    if (d.table.length > 0) {
+      const years = Object.keys(d.table[0]).filter(k => k !== 'Scénario');
+      years.forEach(yr => { html += `<th>${yr}</th>`; });
+    }
+    html += '</tr></thead><tbody>';
+    const SC_COLORS = { 'Optimiste (+1.4°C)':'#3b82f6', 'Intermédiaire (+2.7°C)':'#f59e0b', 'Pessimiste (+4.4°C)':'#ef4444' };
+    d.table.forEach(row => {
+      const c = SC_COLORS[row['Scénario']] || '#6b7f99';
+      html += `<tr><td style="color:${c};font-weight:600">${row['Scénario']}</td>`;
+      const years = Object.keys(row).filter(k => k !== 'Scénario');
+      years.forEach(yr => { html += `<td>${row[yr] || '—'}</td>`; });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+
+    html += sectionLabel('Asymétrie jours / nuits — TXmax vs TNmin');
+    html += `<div class="chart-card"><div id="chart-txtn" style="height:280px"></div></div>`;
+
+    html += sectionLabel('Jours TX ≥ 30°C par an — Paris-Montsouris 1950–2024');
+    html += `<div class="chart-card"><div id="chart-hotdays" style="height:280px"></div></div>`;
+    html += '</div>';
+    html += '</div>';
+
+    el.innerHTML = html;
+    plotChart('chart-proj',    d.charts.projection);
+    plotChart('chart-models',  d.charts.models);
+    plotChart('chart-txtn',    d.charts.tx_tn);
+    plotChart('chart-hotdays', d.charts.hot_days);
+
+    state.loaded.temperatures = !force;
+  } catch(e) {
+    el.innerHTML = `<div class="spinner-wrap"><div class="spinner-text" style="color:#ef4444">Erreur : ${e.message}</div></div>`;
+  }
+}
+
+// Slider logic
+const tempSlider = document.getElementById('temp-year-slider');
+const tempVal    = document.getElementById('temp-year-val');
+let tempDebounce;
+tempSlider.addEventListener('input', () => {
+  state.tempYear = parseInt(tempSlider.value);
+  tempVal.textContent = state.tempYear;
+  clearTimeout(tempDebounce);
+  tempDebounce = setTimeout(() => {
+    if (state.currentPage === 'temperatures') loadTemperatures(true);
+  }, 400);
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// PAGE 3 — Feux
+// ══════════════════════════════════════════════════════════════════════════
+async function loadFires(force=false) {
+  if (state.loaded.fires && !force) return;
+  const el = document.getElementById('fires-content');
+  el.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Chargement des incendies…</div></div>';
+  try {
+    const d = await apiFetch(`/api/fires?start=${state.fireStart}&end=${state.fireEnd}`);
+    const { kpis, charts } = d;
+
+    let html = '';
+    html += sectionLabel(`Synthèse ${state.fireStart}–${state.fireEnd}`);
+    html += '<div class="kpi-grid kpi-grid-4">';
+    html += kpiCard('Incendies', kpis.nb_incendies.toLocaleString('fr'), `${state.fireStart}–${state.fireEnd}`, '#ef4444');
+    html += kpiCard('Surface brûlée', `${kpis.surface_ha.toLocaleString('fr')} ha`, 'total cumulé', '#f97316');
+    html += kpiCard('Dont forêt', `${kpis.surface_foret.toLocaleString('fr')} ha`, `${kpis.forest_pct.toFixed(0)}% du total`, '#f59e0b');
+    html += kpiCard('Dép. le plus touché', `Dép. ${kpis.top_dept}`, `${kpis.top_surf.toLocaleString('fr')} ha cumulés`, '#3b82f6');
+    html += '</div>';
+
+    html += '<div class="cols-2" style="margin-top:1rem">';
+    html += '<div>';
+    html += sectionLabel('Surface brûlée par département');
+    html += `<div class="chart-card">${charts.map ? `<div id="chart-firemap" style="height:380px"></div>` : '<div class="caption" style="padding:2rem;text-align:center">GeoJSON indisponible</div>'}</div>`;
+    html += '</div>';
+    html += '<div>';
+    html += sectionLabel('Évolution annuelle 2003–2024');
+    html += `<div class="chart-card"><div id="chart-firets" style="height:380px"></div></div>`;
+    html += '</div></div>';
+
+    html += sectionLabel('Saisonnalité des incendies (2003–2024)');
+    html += `<div class="chart-card"><div id="chart-fireseason" style="height:240px"></div></div>`;
+
+    el.innerHTML = html;
+    if (charts.map) plotChart('chart-firemap', charts.map);
+    plotChart('chart-firets',     charts.timeseries);
+    plotChart('chart-fireseason', charts.seasonality);
+
+    state.loaded.fires = !force;
+  } catch(e) {
+    el.innerHTML = `<div class="spinner-wrap"><div class="spinner-text" style="color:#ef4444">Erreur : ${e.message}</div></div>`;
+  }
+}
+
+// Slider
+const fireStartEl = document.getElementById('fire-start');
+const fireStartV  = document.getElementById('fire-start-val');
+let fireDebounce;
+fireStartEl.addEventListener('input', () => {
+  state.fireStart = parseInt(fireStartEl.value);
+  fireStartV.textContent = state.fireStart;
+  clearTimeout(fireDebounce);
+  fireDebounce = setTimeout(() => {
+    if (state.currentPage === 'fires') loadFires(true);
+  }, 400);
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// PAGE 4 — Émissions
+// ══════════════════════════════════════════════════════════════════════════
+async function loadEmissions(force=false) {
+  if (state.loaded.emissions && !force) return;
+  const el = document.getElementById('emissions-content');
+  el.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Chargement des émissions…</div></div>';
+  try {
+    const d = await apiFetch(`/api/emissions?substance=${encodeURIComponent(state.substance)}`);
+
+    let html = '';
+    html += sectionLabel('Concentration atmosphérique CO₂ — Mauna Loa 1958–2025');
+    html += `<div class="chart-card"><div id="chart-co2" style="height:300px"></div></div>`;
+
+    html += '<div class="cols-2" style="margin-top:1rem">';
+    html += '<div>';
+    html += sectionLabel('Émissions France — production vs importées');
+    html += `<div class="chart-card"><div id="chart-emi" style="height:300px"></div></div>`;
+    html += '</div>';
+    html += '<div>';
+    html += sectionLabel('Empreinte carbone par habitant');
+    html += `<div class="chart-card"><div id="chart-emp" style="height:300px"></div></div>`;
+    html += '</div></div>';
+
+    html += sectionLabel(`GES par secteur économique — SDES NAMEA · ${d.current_substance}`);
+    html += `<div class="chart-card"><div id="chart-sectors" style="height:380px"></div></div>`;
+
+    el.innerHTML = html;
+    plotChart('chart-co2',     d.charts.co2);
+    plotChart('chart-emi',     d.charts.emissions);
+    plotChart('chart-emp',     d.charts.empreinte);
+    plotChart('chart-sectors', d.charts.sectors);
+
+    state.loaded.emissions = !force;
+  } catch(e) {
+    el.innerHTML = `<div class="spinner-wrap"><div class="spinner-text" style="color:#ef4444">Erreur : ${e.message}</div></div>`;
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// PAGE 5 — Précipitations
+// ══════════════════════════════════════════════════════════════════════════
+async function loadPrecipitations(force=false) {
+  if (state.loaded.precipitations && !force) return;
+  const el = document.getElementById('precipitations-content');
+  el.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Chargement des précipitations…</div></div>';
+  try {
+    const d = await apiFetch(`/api/precipitations?dept=${state.dept}`);
+    const { kpis } = d;
+
+    // Populate dept select (first time)
+    const sel = document.getElementById('dept-select');
+    if (sel.options.length === 0) {
+      const optAll = document.createElement('option');
+      optAll.value = 'all'; optAll.textContent = 'Tous (France entière)'; optAll.selected = (state.dept === 'all');
+      sel.appendChild(optAll);
+      d.depts.forEach(dep => {
+        const o = document.createElement('option');
+        o.value = dep;
+        o.textContent = d.dept_labels[dep] || dep;
+        if (dep === state.dept) o.selected = true;
+        sel.appendChild(o);
+      });
+      document.getElementById('precip-controls').style.display = 'flex';
+    }
+
+    const lastAnom = kpis.last_anom;
+    const lastColor = lastAnom >= 0 ? '#3b82f6' : '#f59e0b';
+
+    let html = '';
+    html += '<div class="kpi-grid kpi-grid-3">';
+    html += kpiCard('Référence 1961–1990', `${kpis.ref_p.toFixed(1)} mm`, 'précipitation mensuelle moy.', '#3b82f6');
+    html += kpiCard(`Dernière année (${kpis.last_year})`, `${kpis.last_precip.toFixed(1)} mm`, `anomalie : ${lastAnom >= 0 ? '+' : ''}${lastAnom.toFixed(1)} mm/mois`, lastColor);
+    html += kpiCard('Années en déficit', String(kpis.dry_years), 'anomalie < −2 mm/mois', '#ef4444');
+    html += '</div>';
+
+    html += '<div class="cols-2" style="margin-top:1rem">';
+    html += '<div>';
+    html += sectionLabel('Carte — anomalie moyenne par département');
+    html += `<div class="chart-card">${d.charts.map ? `<div id="chart-precipmap" style="height:440px"></div>` : '<div class="caption" style="padding:2rem;text-align:center">GeoJSON indisponible</div>'}</div>`;
+    html += '</div>';
+    html += '<div>';
+    html += sectionLabel(`Anomalie de précipitation — ${d.title_ts}`);
+    html += `<div class="chart-card"><div id="chart-precipts" style="height:440px"></div></div>`;
+    html += '</div></div>';
+
+    html += sectionLabel('Écart à la normale par décennie — France entière');
+    html += `<div class="chart-card"><div id="chart-precipdec" style="height:280px"></div></div>`;
+
+    el.innerHTML = html;
+    if (d.charts.map) plotChart('chart-precipmap', d.charts.map);
+    plotChart('chart-precipts',  d.charts.timeseries);
+    plotChart('chart-precipdec', d.charts.decennial);
+
+    state.loaded.precipitations = !force;
+  } catch(e) {
+    el.innerHTML = `<div class="spinner-wrap"><div class="spinner-text" style="color:#ef4444">Erreur : ${e.message}</div></div>`;
+  }
+}
+
+document.getElementById('dept-select').addEventListener('change', e => {
+  state.dept = e.target.value;
+  if (state.currentPage === 'precipitations') loadPrecipitations(true);
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// PAGE 6 — Préconisations
+// ══════════════════════════════════════════════════════════════════════════
+async function loadPreconisations(force=false) {
+  if (state.loaded.preconisations && !force) return;
+  const el = document.getElementById('preconisations-content');
+  el.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div><div class="spinner-text">Chargement…</div></div>';
+  try {
+    const d = await apiFetch(`/api/preconisations?scenario=${encodeURIComponent(state.scenario)}`);
+    const { vals, color, scenario } = d;
+
+    let html = '';
+    html += sectionLabel('Projections pour ce scénario');
+    html += '<div class="kpi-grid kpi-grid-3">';
+    html += kpiCard('Anomalie 2030', `${vals['2030'] >= 0 ? '+' : ''}${vals['2030'].toFixed(2)}°C`, 'vs référence 1961–1990', color);
+    html += kpiCard('Anomalie 2050', `${vals['2050'] >= 0 ? '+' : ''}${vals['2050'].toFixed(2)}°C`, 'vs référence 1961–1990', color);
+    html += kpiCard('Anomalie 2100', `${vals['2100'] >= 0 ? '+' : ''}${vals['2100'].toFixed(2)}°C`, 'vs référence 1961–1990', color);
+    html += '</div>';
+
+    const recos = [
+      {
+        col: 'left',
+        title: 'Risque accru de feux de forêt',
+        color: '#ef4444',
+        items: [
+          "Respecter l'OLDé — débroussaillement 50m autour des habitations",
+          "Privilégier des essences résistantes au feu en zone à risque",
+          "Mettre en place des plans d'évacuation et voies d'accès pompiers",
+          "Limiter les activités à risque ignition en période de sécheresse",
+          "Soutenir la surveillance par drones et détection précoce",
+        ],
+        source: 'PNACC 3 — Axe Forêts & Biodiversité'
+      },
+      {
+        col: 'left',
+        title: 'Vagues de chaleur & caniculaire',
+        color: '#f59e0b',
+        items: [
+          "Végétaliser les espaces urbains — arbres, toitures et murs végétalisés",
+          "Rénover les bâtiments — isolation, ventilation, protections solaires",
+          "Identifier les personnes vulnérables et activer les plans canicule",
+          "Développer des îlots de fraîcheur accessibles en ville",
+          "Adapter les horaires de travail extérieur aux heures fraîches",
+        ],
+        source: 'Earth Action Report 2025 — Adaptation urbaine'
+      },
+      {
+        col: 'right',
+        title: 'Sécheresse & stress hydrique',
+        color: '#3b82f6',
+        items: [
+          "Réduire la consommation d'eau domestique (objectif −10% d'ici 2030)",
+          "Installer des dispositifs de récupération d'eau de pluie",
+          "Substituer les cultures intensives par des variétés adaptées",
+          "Anticiper les restrictions via la plateforme VigiEau",
+          "Renaturer les zones humides pour recharge des nappes phréatiques",
+        ],
+        source: 'PNACC 3 — Axe Eau & Milieux aquatiques'
+      },
+      {
+        col: 'right',
+        title: 'Réduction de l\'empreinte carbone',
+        color: '#10b981',
+        items: [
+          "Objectif national : 2 tCO₂e/hab. d'ici 2050 (actuel : 8.2)",
+          "Privilégier la mobilité douce et les transports collectifs",
+          "Adopter un régime alimentaire bas-carbone",
+          "Accélérer la rénovation énergétique (CEE, MaPrimeRénov)",
+          "Réduire les émissions importées via la consommation responsable",
+        ],
+        source: 'SNBC — Neutralité carbone 2050'
+      },
+    ];
+
+    html += '<div class="cols-2" style="margin-top:1.25rem">';
+    html += '<div>';
+    recos.filter(r => r.col === 'left').forEach(r => {
+      html += `<div class="reco-card" style="--rc-color:${r.color}">
+        <div class="reco-title">${r.title}</div>
+        ${r.items.map(i => `<div class="reco-item">${i}</div>`).join('')}
+        <span class="source-tag">${r.source}</span>
+      </div>`;
+    });
+    html += '</div><div>';
+    recos.filter(r => r.col === 'right').forEach(r => {
+      html += `<div class="reco-card" style="--rc-color:${r.color}">
+        <div class="reco-title">${r.title}</div>
+        ${r.items.map(i => `<div class="reco-item">${i}</div>`).join('')}
+        <span class="source-tag">${r.source}</span>
+      </div>`;
+    });
+    html += '</div></div>';
+
+    // Regulatory refs
+    html += sectionLabel('Alignement réglementaire');
+    const refs = [
+      { name:'PNACC 3', desc:'Adaptation nationale au changement climatique', horizon:'2030', color:'#3b82f6' },
+      { name:'SNBC', desc:'Neutralité carbone France', horizon:'2050', color:'#10b981' },
+      { name:'Earth Action Report 2025', desc:'Réduction émissions mondiales', horizon:'2030', color:'#f59e0b' },
+      { name:'Accord de Paris', desc:'Limiter le réchauffement à +1.5°C', horizon:'2100', color:'#ef4444' },
+      { name:'Fit for 55 (UE)', desc:'−55% émissions vs 1990', horizon:'2030', color:'#8b5cf6' },
+    ];
+    html += '<div class="ref-grid">';
+    refs.forEach(r => {
+      html += `<div class="ref-card" style="--rc-color:${r.color}">
+        <div class="ref-name" style="color:${r.color}">${r.name}</div>
+        <div class="ref-desc">${r.desc}</div>
+        <div class="ref-horizon">Horizon ${r.horizon}</div>
+      </div>`;
+    });
+    html += '</div>';
+
+    el.innerHTML = html;
+    state.loaded.preconisations = !force;
+  } catch(e) {
+    el.innerHTML = `<div class="spinner-wrap"><div class="spinner-text" style="color:#ef4444">Erreur : ${e.message}</div></div>`;
+  }
+}
+
+document.getElementById('scenario-select').addEventListener('change', e => {
+  state.scenario = e.target.value;
+  if (state.currentPage === 'preconisations') loadPreconisations(true);
+});
+
+// ── Chatbot ───────────────────────────────────────────────────────────────
+const chatBtn    = document.getElementById('chat-btn');
+const chatPanel  = document.getElementById('chat-panel');
+const chatMsgs   = document.getElementById('chat-messages');
+const chatInput  = document.getElementById('chat-input');
+const chatSend   = document.getElementById('chat-send');
+const chatHistory = [];  // {role, content}
+
+chatBtn.addEventListener('click', () => chatPanel.classList.toggle('open'));
+
+function appendMsg(role, text) {
+  const div = document.createElement('div');
+  div.className = `msg msg-${role}`;
+  div.textContent = text;
+  chatMsgs.appendChild(div);
+  chatMsgs.scrollTop = chatMsgs.scrollHeight;
+  return div;
+}
+
+function appendTyping() {
+  const div = document.createElement('div');
+  div.className = 'msg msg-bot msg-typing';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  chatMsgs.appendChild(div);
+  chatMsgs.scrollTop = chatMsgs.scrollHeight;
+  return div;
+}
+
+async function sendMessage() {
+  const text = chatInput.value.trim();
+  if (!text) return;
+  chatInput.value = '';
+  chatSend.disabled = true;
+
+  appendMsg('user', text);
+  chatHistory.push({ role: 'user', content: text });
+
+  const typing = appendTyping();
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: chatHistory }),
+    });
+    const data = await res.json();
+    typing.remove();
+
+    if (data.error) {
+      appendMsg('bot', `Erreur : ${data.error}`);
+    } else {
+      appendMsg('bot', data.reply);
+      chatHistory.push({ role: 'assistant', content: data.reply });
+    }
+  } catch(e) {
+    typing.remove();
+    appendMsg('bot', 'Erreur de connexion.');
+  }
+  chatSend.disabled = false;
+}
+
+chatSend.addEventListener('click', sendMessage);
+chatInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+// Auto-resize textarea
+chatInput.addEventListener('input', () => {
+  chatInput.style.height = 'auto';
+  chatInput.style.height = Math.min(chatInput.scrollHeight, 100) + 'px';
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────
+loadOverview();
+</script>
+</body>
+</html>

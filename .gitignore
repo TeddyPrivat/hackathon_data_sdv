@@ -1,6 +1,8 @@
 __pycache__/
 *.pyc
 .DS_Store
+.env
+.claude/
 data/SH_RR_metropole.zip
 data/SH_TN_metropole.zip
 data/SH_TX_metropole.zip
